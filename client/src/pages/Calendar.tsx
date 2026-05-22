@@ -37,6 +37,7 @@ type CalendarData = {
 }
 
 const MONTHS_TO_FETCH = 3
+const API_URL = import.meta.env.VITE_API_URL || 'https://bhavapp.fly.dev'
 
 export default function Calendar() {
   const [date, setDate] = useState<Date>(new Date())
@@ -66,7 +67,7 @@ export default function Calendar() {
       return
     }
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/find-location?name=${query}`)
+      const response = await fetch(`${API_URL}/find-location?name=${query}`)
       const data = await response.json()
       const allLocations = [...(data.CONTAINS || []), ...(data.EQUALS || []), ...(data.STARTS || [])]
       setLocations(allLocations)
@@ -85,7 +86,7 @@ export default function Calendar() {
       futureEndDate
 
       // Fetch past 3 months
-      const pastResponse = await fetch(`${import.meta.env.VITE_API_URL}/calendar`, {
+      const pastResponse = await fetch(`${API_URL}/calendar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +103,7 @@ export default function Calendar() {
       const pastData: CalendarData = await pastResponse.json()
 
       // Fetch future 3 months
-      const futureResponse = await fetch(`${import.meta.env.VITE_API_URL}/calendar`, {
+      const futureResponse = await fetch(`${API_URL}/calendar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -136,7 +137,7 @@ export default function Calendar() {
 
   const getLocationByCoordinates = useCallback(async (latitude: number, longitude: number) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/find-location?latitude=${latitude}&longitude=${longitude}`)
+      const response = await fetch(`${API_URL}/find-location?latitude=${latitude}&longitude=${longitude}`)
       const data = await response.json()
       if (data && data.length > 0) {
         setSelectedLocation(data[0])

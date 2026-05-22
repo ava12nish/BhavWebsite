@@ -23,6 +23,21 @@ import {
 } from 'lucide-react'
 import AppleSVG from "../assets/Download_on_the_App_Store_Badge_US-UK_RGB_blk_092917.svg"
 import GooglePlayStoreSVG from "../assets/GetItOnGooglePlay_Badge_Web_color_English.png"
+import ReadPNG from '../assets/screenshots/Read.PNG'
+import LibraryPNG from '../assets/screenshots/Library.PNG'
+import CalendarPNG from '../assets/screenshots/Calendar.PNG'
+import CounterPNG from '../assets/screenshots/Counter.PNG'
+import SettingsPNG from '../assets/screenshots/Settings.PNG'
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://bhavapp.fly.dev'
+
+const mockupScreens = {
+  read: ReadPNG,
+  library: LibraryPNG,
+  calendar: CalendarPNG,
+  counter: CounterPNG,
+  settings: SettingsPNG
+}
 
 // Types
 type Location = {
@@ -71,7 +86,7 @@ export default function Home() {
   const [isCompleted, setIsCompleted] = useState(false)
 
   // iPhone Mockup Active Tab
-  const [activeMockupTab, setActiveMockupTab] = useState<'read' | 'calendar' | 'counter'>('read')
+  const [activeMockupTab, setActiveMockupTab] = useState<'read' | 'library' | 'calendar' | 'counter' | 'settings'>('read')
 
   // Interactive Japa Counter States
   const [mantraCount, setMantraCount] = useState(0)
@@ -145,7 +160,7 @@ export default function Home() {
     setCalendarLoading(true)
     try {
       const today = new Date()
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/calendar`, {
+      const response = await fetch(`${API_URL}/calendar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -275,206 +290,41 @@ export default function Home() {
                 <div className="w-12 h-1 bg-neutral-800 rounded-full" />
               </div>
 
-              {/* Status Bar */}
-              <div className="h-10 pt-3 px-6 flex justify-between items-center text-xs font-semibold text-neutral-800 z-40 bg-[#FDFBF7]/80 backdrop-blur-sm">
-                <span>9:41</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3.5 h-3.5 bg-neutral-800 rounded-full flex items-center justify-center text-[8px] text-white">ॐ</span>
-                  <div className="w-4 h-2.5 border border-neutral-800 rounded-sm" />
-                </div>
-              </div>
-
-              {/* Dynamic App Screens inside Mockup */}
-              <div className="flex-grow p-4 pt-1 overflow-y-auto scrollbar-none flex flex-col justify-start">
+              {/* Screenshot Image Container */}
+              <div className="w-full h-full relative overflow-hidden bg-[#FDFBF7]">
                 <AnimatePresence mode="wait">
-                  {activeMockupTab === 'read' && (
-                    <motion.div
-                      key="read"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="space-y-4"
-                    >
-                      <div className="flex justify-between items-center mt-1">
-                        <span className="text-[10px] uppercase font-bold text-primary tracking-widest">Daily Wisdom</span>
-                        <span className="text-[11px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">BG 1.1</span>
-                      </div>
-                      
-                      <div className="text-center p-3 rounded-2xl bg-white border border-neutral-200/50 shadow-sm space-y-3">
-                        <p className="text-sm font-serif font-bold text-neutral-900 leading-relaxed whitespace-pre-line">
-                          dhṛtarāṣṭra uvāca<br/>
-                          dharma-kṣetre kuru-kṣetre<br/>
-                          samavetā yuyutsavaḥ
-                        </p>
-                        <div className="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">
-                          <Volume2 className="h-3 w-3" />
-                          <span>TTS Active</span>
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-2xl bg-white border border-neutral-200/50 shadow-sm space-y-1">
-                        <h4 className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Translation</h4>
-                        <p className="text-xs text-neutral-600 leading-relaxed font-serif">
-                          "Dhṛtarāṣṭra said: O Sañjaya, after my sons and the sons of Pāṇḍu assembled in the place of pilgrimage..."
-                        </p>
-                      </div>
-
-                      <div className="p-3 rounded-2xl bg-secondary/5 border border-secondary/20 shadow-sm space-y-1">
-                        <div className="flex items-center gap-1 text-secondary">
-                          <Sparkles className="h-3 w-3" />
-                          <h4 className="text-xs font-bold uppercase tracking-wider">Key Insight</h4>
-                        </div>
-                        <p className="text-xs text-neutral-700 italic font-serif leading-relaxed">
-                          The Kurukṣetra battlefield represents the internal moral struggles...
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {activeMockupTab === 'calendar' && (
-                    <motion.div
-                      key="calendar"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="space-y-4"
-                    >
-                      <div className="flex justify-between items-center mt-1">
-                        <span className="text-[10px] uppercase font-bold text-primary tracking-widest">Astronomical Engine</span>
-                        <div className="flex items-center gap-1 text-[10px] font-semibold text-neutral-500">
-                          <MapPin className="h-3 w-3 text-primary" />
-                          <span>Edison, US</span>
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl bg-white border border-neutral-200/50 shadow-sm space-y-3">
-                        <div className="text-center">
-                          <span className="text-xs text-neutral-400">TODAY</span>
-                          <h4 className="text-base font-bold font-serif text-neutral-900 mt-0.5">Ekadasi Fasting</h4>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-2 text-center text-[10px]">
-                          <div className="p-2 rounded-xl bg-neutral-50 border border-neutral-100">
-                            <span className="text-neutral-400 block mb-0.5">Tithi</span>
-                            <span className="font-semibold text-neutral-800">Ekadasi</span>
-                          </div>
-                          <div className="p-2 rounded-xl bg-neutral-50 border border-neutral-100">
-                            <span className="text-neutral-400 block mb-0.5">Nakshatra</span>
-                            <span className="font-semibold text-neutral-800">Rohini</span>
-                          </div>
-                        </div>
-
-                        <div className="p-2.5 rounded-xl bg-amber-50 border border-primary/20 text-center">
-                          <span className="text-[9px] uppercase font-bold text-primary tracking-wider block mb-0.5">Parana (Break Fast)</span>
-                          <span className="text-[11px] font-bold text-neutral-800">05:42 AM - 09:56 AM</span>
-                        </div>
-                      </div>
-
-                      {/* Cal Visual Grid Mock */}
-                      <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-semibold text-neutral-400">
-                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={i}>{d}</span>)}
-                        {Array.from({ length: 28 }).map((_, i) => {
-                          const isToday = i === 14
-                          return (
-                            <span 
-                              key={i} 
-                              className={`h-6 flex items-center justify-center rounded-md ${
-                                isToday 
-                                  ? 'bg-primary text-white font-bold' 
-                                  : i === 13 || i === 15 
-                                  ? 'bg-neutral-100 text-neutral-800' 
-                                  : 'text-neutral-300'
-                              }`}
-                            >
-                              {i + 1}
-                            </span>
-                          )
-                        })}
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {activeMockupTab === 'counter' && (
-                    <motion.div
-                      key="counter"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="space-y-4 flex flex-col items-center justify-center text-center mt-4"
-                    >
-                      <span className="text-[10px] uppercase font-bold text-primary tracking-widest mb-1">Mantra Meditation</span>
-                      
-                      {/* Round Japa Ring Visual */}
-                      <div className="relative w-36 h-36 flex items-center justify-center rounded-full border-4 border-primary/10">
-                        <svg className="absolute inset-0 transform -rotate-95 w-full h-full">
-                          <circle
-                            cx="72"
-                            cy="72"
-                            r="66"
-                            className="stroke-primary"
-                            strokeWidth="6"
-                            fill="transparent"
-                            strokeDasharray="414"
-                            strokeDashoffset="138" // simulated progress
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                        <div className="flex flex-col items-center">
-                          <span className="text-3xl font-bold font-serif text-neutral-900">76</span>
-                          <span className="text-[9px] uppercase tracking-wider text-neutral-400 font-semibold">Mantras</span>
-                        </div>
-                      </div>
-
-                      <div className="w-full grid grid-cols-2 gap-3 mt-2">
-                        <div className="p-2 bg-white border border-neutral-100 rounded-2xl text-center">
-                          <span className="text-[9px] text-neutral-400 block">Current Round</span>
-                          <span className="text-sm font-bold text-neutral-800">4 / 16</span>
-                        </div>
-                        <div className="p-2 bg-white border border-neutral-100 rounded-2xl text-center">
-                          <span className="text-[9px] text-neutral-400 block">Total Japa Time</span>
-                          <span className="text-sm font-bold text-neutral-800">24m 15s</span>
-                        </div>
-                      </div>
-
-                      <span className="text-[10px] text-neutral-400 italic">Tap circle on screen to count</span>
-                    </motion.div>
-                  )}
+                  <motion.img
+                    key={activeMockupTab}
+                    src={mockupScreens[activeMockupTab]}
+                    alt={`${activeMockupTab} Screen`}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full h-full object-cover select-none"
+                  />
                 </AnimatePresence>
-              </div>
 
-              {/* TabBar Mockup */}
-              <div className="h-16 border-t border-neutral-200 bg-[#FDFBF7] px-6 flex justify-between items-center z-40 pb-2">
-                <button 
-                  onClick={() => setActiveMockupTab('read')}
-                  className={`flex flex-col items-center gap-1 transition-colors ${activeMockupTab === 'read' ? 'text-primary' : 'text-neutral-400'}`}
-                >
-                  <BookOpen className="h-4.5 w-4.5" />
-                  <span className="text-[8px] font-bold">Read</span>
-                </button>
-                <button 
-                  onClick={() => setActiveMockupTab('calendar')}
-                  className={`flex flex-col items-center gap-1 transition-colors ${activeMockupTab === 'calendar' ? 'text-primary' : 'text-neutral-400'}`}
-                >
-                  <CalendarIcon className="h-4.5 w-4.5" />
-                  <span className="text-[8px] font-bold">Calendar</span>
-                </button>
-                <button 
-                  onClick={() => setActiveMockupTab('counter')}
-                  className={`flex flex-col items-center gap-1 transition-colors ${activeMockupTab === 'counter' ? 'text-primary' : 'text-neutral-400'}`}
-                >
-                  <Clock className="h-4.5 w-4.5" />
-                  <span className="text-[8px] font-bold">Counter</span>
-                </button>
+                {/* Invisible interactive tab click zones overlaid on screenshot's tab bar */}
+                <div className="absolute bottom-0 left-0 right-0 h-16 z-40 flex bg-transparent">
+                  <button onClick={() => setActiveMockupTab('read')} className="flex-1 bg-transparent border-0 cursor-pointer outline-none" aria-label="Read tab" />
+                  <button onClick={() => setActiveMockupTab('library')} className="flex-1 bg-transparent border-0 cursor-pointer outline-none" aria-label="Library tab" />
+                  <button onClick={() => setActiveMockupTab('calendar')} className="flex-1 bg-transparent border-0 cursor-pointer outline-none" aria-label="Calendar tab" />
+                  <button onClick={() => setActiveMockupTab('counter')} className="flex-1 bg-transparent border-0 cursor-pointer outline-none" aria-label="Counter tab" />
+                  <button onClick={() => setActiveMockupTab('settings')} className="flex-1 bg-transparent border-0 cursor-pointer outline-none" aria-label="Settings tab" />
+                </div>
               </div>
             </div>
           </div>
 
           {/* Subtitle / Interactive control description */}
-          <div className="absolute -bottom-8 bg-card border border-border px-3 py-1.5 rounded-full text-xs text-muted-foreground flex gap-3 shadow-md">
+          <div className="absolute -bottom-8 bg-card border border-border px-3.5 py-1.5 rounded-full text-xs text-muted-foreground flex gap-3 shadow-md z-30">
             <span className="font-semibold text-primary">Interactive Demo:</span>
-            <button onClick={() => setActiveMockupTab('read')} className={`hover:text-foreground ${activeMockupTab === 'read' && 'text-foreground underline'}`}>Read</button>
-            <button onClick={() => setActiveMockupTab('calendar')} className={`hover:text-foreground ${activeMockupTab === 'calendar' && 'text-foreground underline'}`}>Calendar</button>
-            <button onClick={() => setActiveMockupTab('counter')} className={`hover:text-foreground ${activeMockupTab === 'counter' && 'text-foreground underline'}`}>Counter</button>
+            <button onClick={() => setActiveMockupTab('read')} className={`hover:text-foreground transition-colors ${activeMockupTab === 'read' ? 'text-primary font-bold underline' : ''}`}>Read</button>
+            <button onClick={() => setActiveMockupTab('library')} className={`hover:text-foreground transition-colors ${activeMockupTab === 'library' ? 'text-primary font-bold underline' : ''}`}>Library</button>
+            <button onClick={() => setActiveMockupTab('calendar')} className={`hover:text-foreground transition-colors ${activeMockupTab === 'calendar' ? 'text-primary font-bold underline' : ''}`}>Calendar</button>
+            <button onClick={() => setActiveMockupTab('counter')} className={`hover:text-foreground transition-colors ${activeMockupTab === 'counter' ? 'text-primary font-bold underline' : ''}`}>Counter</button>
+            <button onClick={() => setActiveMockupTab('settings')} className={`hover:text-foreground transition-colors ${activeMockupTab === 'settings' ? 'text-primary font-bold underline' : ''}`}>Settings</button>
           </div>
         </motion.div>
       </section>
@@ -742,19 +592,6 @@ export default function Home() {
                 </motion.div>
               )}
             </div>
-
-            {/* Key Insight Box */}
-            <div className="p-5 rounded-2xl bg-secondary/5 border border-secondary/20 space-y-2">
-              <div className="flex items-center gap-2 text-secondary">
-                <Sparkles className="h-4 w-4" />
-                <span className="text-xs font-bold uppercase tracking-wider">Key Insight</span>
-              </div>
-              <p className="text-sm leading-relaxed text-foreground italic font-serif">
-                {mockVerse.keyInsight}
-              </p>
-            </div>
-
-            <hr className="border-border/40" />
 
             {/* Collapsible Purport */}
             <div className="space-y-2">
