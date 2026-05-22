@@ -25,6 +25,9 @@ export function Footer() {
             <Link to="/terms-of-service" className="text-muted-foreground hover:text-primary transition-colors">
               Terms of Service
             </Link>
+            <a href="https://www.avanishsamala.com/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+              Developer Website
+            </a>
           </nav>
         </div>
       </div>
