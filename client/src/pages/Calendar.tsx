@@ -94,6 +94,9 @@ export default function Calendar() {
         body: JSON.stringify({
           city: location.city,
           country: location.country,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          tzname: location.tzname,
           period: MONTHS_TO_FETCH * 30,
           year: pastStartDate.getFullYear(),
           month: pastStartDate.getMonth() + 1,
@@ -111,6 +114,9 @@ export default function Calendar() {
         body: JSON.stringify({
           city: location.city,
           country: location.country,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          tzname: location.tzname,
           period: MONTHS_TO_FETCH * 30,
           year: startDate.getFullYear(),
           month: startDate.getMonth() + 1,
