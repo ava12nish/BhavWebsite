@@ -29,7 +29,7 @@ import CalendarPNG from '../assets/screenshots/Calendar.PNG'
 import CounterPNG from '../assets/screenshots/Counter.PNG'
 import SettingsPNG from '../assets/screenshots/Settings.PNG'
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://bhavapp.fly.dev'
+const API_URL = import.meta.env.VITE_API_URL || 'https://bhav-api.fly.dev'
 
 const mockupScreens = {
   read: ReadPNG,

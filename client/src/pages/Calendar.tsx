@@ -37,7 +37,7 @@ type CalendarData = {
 }
 
 const MONTHS_TO_FETCH = 3
-const API_URL = import.meta.env.VITE_API_URL || 'https://bhavapp.fly.dev'
+const API_URL = import.meta.env.VITE_API_URL || 'https://bhav-api.fly.dev'
 
 export default function Calendar() {
   const [date, setDate] = useState<Date>(new Date())
