@@ -22,13 +22,7 @@ from flask_cors import CORS
 app = GS.app
 CORS(app, resources={
     r"/*": {
-        "origins": [
-            "https://bhavapp.vercel.app",
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "https://thebhavapp.com",
-            "https://www.thebhavapp.com"
-        ],
+        "origins": "*",
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
@@ -75,7 +69,7 @@ def resolve_tzname(tzname):
             if tz['offset'] == offset_mins:
                 return tz['name']
     except Exception as e:
-        print(f"Error resolving timezone by offset for {tzname}: {e}")
+        print(f"Error resolving timezone by offset for {tzname}: {e}", file=sys.stderr)
         
     # Default fallback
     return '-5:00 America/New_York'
@@ -131,7 +125,7 @@ def search_external_locations(query):
                 })
             return mapped
     except Exception as e:
-        print(f"Error querying Open-Meteo geocoding: {e}")
+        print(f"Error querying Open-Meteo geocoding: {e}", file=sys.stderr)
         return []
 
 # Custom findLocation endpoint to override gaurabda's default one
