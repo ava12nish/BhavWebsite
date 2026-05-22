@@ -11,7 +11,8 @@ import {
 } from "../components/ui/sheet"
 
 const navItems = [
-  { name: 'Calendar', path: '/' },
+  { name: 'Home', path: '/' },
+  { name: 'Calendar', path: '/calendar' },
   { name: 'Download', path: '/download' },
   { name: 'About', path: '/about' },
   { name: 'Contact', path: '/contact' },
@@ -22,28 +23,29 @@ export function Navbar() {
   const location = useLocation()
 
   return (
-    <nav className="sticky top-0 z-50 w-full px-4 py-4 backdrop-blur-md bg-white/10">
+    <nav className="sticky top-0 z-50 w-full px-6 py-4 backdrop-blur-md bg-background/80 border-b border-border/40">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-2xl sm:text-3xl font-bold font-marcellus cursor-pointer"
-          onClick={() => window.location.href = "/"}
-        >
-          Bhāv
-        </motion.h1>
+        <Link to="/">
+          <motion.h1 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-2xl sm:text-3xl font-bold font-marcellus cursor-pointer text-primary hover:opacity-90 flex items-center gap-2"
+          >
+            <span className="text-3xl">ॐ</span> Bhāv
+          </motion.h1>
+        </Link>
 
         {/* Desktop menu */}
-        <ul className="hidden md:flex space-x-4">
+        <ul className="hidden md:flex space-x-2">
           {navItems.map((item) => (
             <li key={item.name}>
               <Link 
                 to={item.path} 
-                className={`px-3 py-2 rounded-md transition-colors font-marcellus ${
+                className={`px-4 py-2 rounded-xl transition-all duration-300 font-marcellus text-sm font-medium ${
                   location.pathname === item.path
-                    ? 'bg-white/20 text-white'
-                    : 'hover:bg-white/10 text-white/80 hover:text-white'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
                 {item.name}
@@ -58,33 +60,33 @@ export function Navbar() {
             <Button 
               variant="ghost" 
               size="icon"
-              className="md:hidden hover:bg-white/10"
+              className="md:hidden hover:bg-muted"
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="h-6 w-6 text-foreground" />
             </Button>
           </SheetTrigger>
-          <SheetContent className="bg-gradient-to-br from-[#5170ff] to-[#ff66c4] border-none pt-12">
+          <SheetContent className="bg-background border-l border-border/40 pt-16 px-6">
             <div className="absolute right-4 top-4">
               <SheetClose asChild>
                 <Button 
                   variant="ghost" 
                   size="icon"
-                  className="hover:bg-white/10"
+                  className="hover:bg-muted"
                 >
-                  <X className="h-6 w-6 text-white" />
+                  <X className="h-6 w-6 text-foreground" />
                 </Button>
               </SheetClose>
             </div>
-            <nav>
-              <ul className="flex flex-col space-y-3">
+            <nav className="mt-8">
+              <ul className="flex flex-col space-y-4">
                 {navItems.map((item) => (
                   <li key={item.path}>
                     <Link
                       to={item.path}
-                      className={`block rounded-lg px-4 py-2 text-lg transition-colors ${
+                      className={`block rounded-xl px-4 py-3 text-lg font-marcellus transition-all ${
                         location.pathname === item.path
-                          ? 'bg-white/20 text-white'
-                          : 'hover:bg-white/10 text-white/80 hover:text-white'
+                          ? 'bg-primary/10 text-primary font-semibold'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                       }`}
                       onClick={() => setIsOpen(false)}
                     >

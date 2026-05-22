@@ -3,7 +3,7 @@ import { Calendar as CalendarComponent } from '../components/ui/calendar'
 //import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
-import { ChevronLeft, ChevronRight, Info, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Info, X, MapPin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { addMonths, subMonths, startOfMonth } from 'date-fns'
 
@@ -216,16 +216,19 @@ export default function Calendar() {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
-      className="w-full max-w-6xl mx-auto p-4"
+      className="w-full max-w-6xl mx-auto p-4 space-y-6"
     >
-      <div className="text-center mb-8">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 font-marcellus text-white">
+      <div className="text-center mb-8 space-y-2">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold font-marcellus text-foreground">
           {date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </h2>
-        <p className="text-lg text-white/70">{selectedLocation ? selectedLocation.name : 'Select a location'}</p>
+        <div className="inline-flex items-center gap-1 text-sm bg-primary/10 text-primary px-3 py-1.5 rounded-full font-marcellus font-semibold">
+          <MapPin className="h-4 w-4" />
+          <span>{selectedLocation ? selectedLocation.name : 'Select a location'}</span>
+        </div>
       </div>
 
-      <div className="relative flex items-center mb-6">
+      <div className="relative flex items-center mb-6 max-w-lg mx-auto">
         <Input
           type="text"
           placeholder="Search for a city..."
@@ -234,16 +237,28 @@ export default function Calendar() {
             setCitySearch(e.target.value)
             searchLocations(e.target.value)
           }}
-          className="bg-white/10 border-white/30 text-white placeholder-white/50 pr-20"
+          className="bg-card border-border text-foreground placeholder-muted-foreground pr-20 rounded-2xl h-12 shadow-sm focus:ring-primary"
         />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-1 text-white hover:bg-white/10"
-          onClick={() => setShowTooltip(!showTooltip)}
-        >
-          <Info className="h-5 w-5" />
-        </Button>
+        <div className="absolute right-1 flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:bg-muted rounded-full"
+            onClick={handleGeolocation}
+            disabled={geolocating}
+            title="Use current location"
+          >
+            <MapPin className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:bg-muted rounded-full"
+            onClick={() => setShowTooltip(!showTooltip)}
+          >
+            <Info className="h-5 w-5" />
+          </Button>
+        </div>
 
         <AnimatePresence>
           {showTooltip && (
@@ -253,19 +268,21 @@ export default function Calendar() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="absolute right-0 top-12 w-64 p-4 bg-white/10 backdrop-blur-md rounded-lg shadow-lg z-50"
+              className="absolute right-0 top-14 w-72 p-5 bg-card border border-border rounded-3xl shadow-xl z-50 text-left"
             >
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-2 right-2 text-white hover:bg-white/10"
+                className="absolute top-2 right-2 text-muted-foreground hover:bg-muted rounded-full"
                 onClick={() => setShowTooltip(false)}
               >
                 <X className="h-4 w-4" />
               </Button>
-              <h4 className="text-white font-semibold mb-2">Important Note</h4>
-              <p className="text-white/80 text-sm">
-              This calendar displays Vedic astrological information, including Tithi, Nakshatra, important events such as fasting, appearance/disappearance days, and break fast times for each day. However, it is limited to cities with relatively large populations or those that are well-known. So, if you do not see your city, please search for a city in your vicinity.
+              <h4 className="text-foreground font-marcellus font-bold mb-2 flex items-center gap-2">
+                <span className="text-primary">ॐ</span> Important Note
+              </h4>
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                This calendar displays Vedic astrological information, including Tithi, Nakshatra, important events such as fasting, appearance/disappearance days, and break fast times for each day. However, it is limited to cities with relatively large populations or those that are well-known. So, if you do not see your city, please search for a city in your vicinity.
               </p>
             </motion.div>
           )}
@@ -273,11 +290,11 @@ export default function Calendar() {
       </div>
 
       {locations.length > 0 && (
-        <ul className="absolute z-50 w-full max-w-md bg-white/10 backdrop-blur-md rounded-lg mt-1 max-h-40 overflow-y-auto border border-white/20">
+        <ul className="absolute z-50 w-full max-w-lg left-1/2 -translate-x-1/2 bg-card border border-border rounded-2xl mt-1 max-h-48 overflow-y-auto shadow-xl divide-y divide-border/40">
           {locations.map((location, index) => (
             <li
               key={index}
-              className="p-2 hover:bg-white/20 cursor-pointer"
+              className="p-3 hover:bg-muted cursor-pointer transition-colors text-sm text-foreground flex items-center gap-2"
               onClick={() => {
                 setSelectedLocation(location)
                 setCitySearch(location.name)
@@ -286,17 +303,19 @@ export default function Calendar() {
                 localStorage.setItem('userLocation', JSON.stringify(location))
               }}
             >
-              {location.name}, {location.country}
+              <MapPin className="h-4 w-4 text-primary" />
+              <span>{location.name}, {location.country}</span>
             </li>
           ))}
         </ul>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
+        {/* Calendar Body */}
         <div className="lg:col-span-8">
-          <div className="bg-white/10 rounded-lg p-6">
+          <div className="bg-card border border-border/80 rounded-[2rem] p-6 shadow-sm">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-marcellus text-white">
+              <h3 className="text-2xl font-marcellus text-foreground font-semibold">
                 {date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </h3>
             </div>
@@ -315,20 +334,20 @@ export default function Calendar() {
                 caption: "relative flex items-center justify-center",
                 caption_label: "hidden",
                 nav: "flex items-center space-x-1",
-                nav_button: "absolute h-9 w-9 bg-transparent p-0 opacity-70 hover:opacity-100 text-white",
+                nav_button: "absolute h-9 w-9 bg-transparent p-0 opacity-70 hover:opacity-100 text-foreground hover:bg-muted rounded-xl",
                 nav_button_previous: "left-1",
                 nav_button_next: "right-1",
                 table: "w-full border-collapse",
-                head_row: "flex w-full",
-                head_cell: "text-white/70 w-[14.2857143%] font-normal text-[0.8rem] py-2",
+                head_row: "flex w-full border-b border-border/40 pb-2",
+                head_cell: "text-muted-foreground w-[14.2857143%] font-marcellus font-bold text-[0.85rem] py-2 text-center",
                 row: "flex w-full mt-2",
                 cell: "relative w-[14.2857143%] text-center p-0 focus-within:relative focus-within:z-20",
-                day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-white/20 rounded-md mx-auto",
-                day_selected: "bg-white/30 text-white hover:bg-white/40",
-                day_today: "bg-white/10 text-white",
-                day_outside: "text-white/30 opacity-50 hover:bg-transparent",
-                day_disabled: "text-white/30 opacity-50",
-                day_range_middle: "aria-selected:bg-white/20",
+                day: "h-10 w-10 p-0 font-sans font-medium text-sm text-foreground aria-selected:opacity-100 hover:bg-muted rounded-xl mx-auto flex items-center justify-center transition-all",
+                day_selected: "bg-primary text-primary-foreground hover:bg-primary/95 shadow-md",
+                day_today: "bg-primary/10 text-primary border border-primary/20",
+                day_outside: "text-muted-foreground/30 opacity-50 hover:bg-transparent",
+                day_disabled: "text-muted-foreground/30 opacity-50",
+                day_range_middle: "aria-selected:bg-primary/10",
                 day_hidden: "invisible",
               }}
               components={{
@@ -339,44 +358,61 @@ export default function Calendar() {
           </div>
         </div>
 
+        {/* Side Astronomical Panel */}
         <div className="lg:col-span-4">
-  <div className="bg-white/10 p-6 rounded-lg h-full">
-    {loading ? (
-      <p className="text-white/70">Loading...</p>
-    ) : getDayInfo(date) ? (
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-xl font-marcellus mb-3 text-white">Tithi/Nakshatra</h3>
-          <p className="text-white/70">
-            Tithi: {getDayInfo(date)?.astrodata.tithi}
-          </p>
-          <p className="text-white/70">
-            Nakshatra: {getDayInfo(date)?.astrodata.naksatra}
-          </p>
-        </div>
-        <div>
-          <h3 className="text-xl font-marcellus mb-3 text-white">Events</h3>
-          {getDayInfo(date)?.events && getDayInfo(date)!.events.length > 0 ? (
-            getDayInfo(date)!.events.map((event, index) => (
-              <p key={index} className="text-white/70 mb-2">{event.text}</p>
-            ))
-          ) : (
-            <p className="text-white/70">No events for this day</p>
-          )}
-        </div>
-      </div>
-    ) : (
-      <p className="text-white/70">Select a date to view details</p>
-    )}
+          <div className="bg-card border border-border/80 p-6 rounded-[2rem] h-full shadow-sm flex flex-col justify-between">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-16 space-y-3">
+                <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground">Calculating cosmic offsets...</p>
+              </div>
+            ) : getDayInfo(date) ? (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xs uppercase font-bold tracking-widest text-primary font-marcellus mb-2">Lunar Observances</h3>
+                  <div className="space-y-2">
+                    <div className="p-3 bg-muted/40 border border-border/40 rounded-2xl">
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold">Tithi</span>
+                      <p className="text-sm font-semibold text-foreground mt-0.5">{getDayInfo(date)?.astrodata.tithi}</p>
+                    </div>
+                    <div className="p-3 bg-muted/40 border border-border/40 rounded-2xl">
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold">Nakshatra</span>
+                      <p className="text-sm font-semibold text-foreground mt-0.5">{getDayInfo(date)?.astrodata.naksatra}</p>
+                    </div>
+                  </div>
+                </div>
 
-    {/* Disclaimer only shows if "DST" is mentioned in any event */}
-    {getDayInfo(date)?.events?.some(event => event.text.includes("DST")) && (
-      <div className="mt-4 text-xs text-white/50 italic">
-        * This currently only shows daylight savings time. So you may need to subtract 1 hour based on your needs.
-      </div>
-    )}
-  </div>
-</div>
+                <div className="border-t border-border/40 pt-4">
+                  <h3 className="text-xs uppercase font-bold tracking-widest text-primary font-marcellus mb-3">Devotional Events</h3>
+                  <div className="space-y-2 max-h-56 overflow-y-auto">
+                    {getDayInfo(date)?.events && getDayInfo(date)!.events.length > 0 ? (
+                      getDayInfo(date)!.events.map((event, index) => (
+                        <div key={index} className="p-3 bg-primary/5 border border-primary/20 rounded-2xl text-xs text-foreground font-medium leading-relaxed flex gap-2">
+                          <span className="text-primary font-bold">•</span>
+                          <span>{event.text}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No specific appearance, disappearance, or fasting events scheduled for this day.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center py-16 space-y-2">
+                <Info className="h-10 w-10 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">Select a calendar date to load Vedic alignments.</p>
+              </div>
+            )}
+
+            {/* Disclaimer showing only if DST is active */}
+            {getDayInfo(date)?.events?.some(event => event.text.includes("DST")) && (
+              <div className="mt-6 text-[10px] text-muted-foreground/70 italic border-t border-border/40 pt-3">
+                * Calendar output registers daylight savings time offsets. Verify local sunrise conversions if required.
+              </div>
+            )}
+          </div>
+        </div>
 
       </div>
     </motion.div>

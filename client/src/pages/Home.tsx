@@ -1,17 +1,30 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Calendar } from '../components/ui/calendar'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
-import { Button } from '../components/ui/button'
-import { Textarea } from '../components/ui/textarea'
-import { Input } from '../components/ui/input'
-import { ChevronLeft, ChevronRight, Info,Share2, MapPin } from 'lucide-react'
-//Search
-import { motion } from 'framer-motion'
-import { addMonths, subMonths, startOfMonth } from 'date-fns'
+import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  BookOpen, 
+  Calendar as CalendarIcon, 
+  Compass, 
+  Sparkles, 
+  Smartphone, 
+  Play, 
+  Pause, 
+  Volume2, 
+  RotateCcw, 
+  Heart, 
+  Check, 
+  ArrowRight,
+  Info,
+  MapPin,
+  Clock,
+  HeartHandshake
+} from 'lucide-react'
+import AppleSVG from "../assets/Download_on_the_App_Store_Badge_US-UK_RGB_blk_092917.svg"
+import GooglePlayStoreSVG from "../assets/GetItOnGooglePlay_Badge_Web_color_English.png"
 
+// Types
 type Location = {
   city: string
   country: string
@@ -36,341 +49,975 @@ type CalendarDay = {
   }
 }
 
-type CalendarData = {
-  location: Location
-  days: CalendarDay[]
+const mockVerse = {
+  verseNumber: "BG 1.1",
+  verse: "dhṛtarāṣṭra uvāca\ndharma-kṣetre kuru-kṣetre\nsamavetā yuyutsavaḥ\nmāmakāḥ pāṇḍavāś caiva\nkim akurvata sañjaya",
+  wordByWordDefinition: "dhṛtarāṣṭraḥ uvāca — King Dhṛtarāṣṭra said; dharma-kṣetre — in the place of pilgrimage; kuru-kṣetre — in the place named Kurukṣetra; samavetāḥ — assembled; yuyutsavaḥ — desiring to fight; māmakāḥ — my party; pāṇḍavāḥ — the sons of Pāṇḍu; ca — and; eva — certainly; kim — what; akurvata — did they do; sañjaya — O Sañjaya.",
+  translation: "Dhṛtarāṣṭra said: O Sañjaya, after my sons and the sons of Pāṇḍu assembled in the place of pilgrimage at Kurukṣetra, desiring to fight, what did they do?",
+  keyInsight: "The Kurukṣetra battlefield represents not just a historical site, but the internal conflict within the human heart between the righteous impulses (Pāṇḍavas) and the ego-driven tendencies (Kauravas).",
+  purport: "Bhagavad-gītā is the widely read theistic science summarized in the Gītā-māhātmya (Glorification of the Gītā). There it is said that one should read Bhagavad-gītā very scrutinizingly with the help of a person who is a devotee of Śrī Kṛṣṇa and try to understand it without personally motivated interpretations. The example of clear understanding is in the Bhagavad-gītā itself, in the way the teaching is understood by Arjuna, who heard the Gītā directly from the Lord."
 }
 
-const MONTHS_TO_FETCH = 3 // Fetch 3 months of data at a time
-
 export default function Home() {
-  const [date, setDate] = useState<Date>(new Date())
-  const [reflection, setReflection] = useState('')
-  const [citySearch, setCitySearch] = useState('')
-  const [locations, setLocations] = useState<Location[]>([])
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
-  const [calendarData, setCalendarData] = useState<Record<string, CalendarDay>>({})
-  const [loading, setLoading] = useState(false)
-  const [geolocating, setGeolocating] = useState(false)
+  // Speech synthesis states
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [activeSpeechText, setActiveSpeechText] = useState('')
 
-  const searchLocations = useCallback(async (query: string) => {
-    if (query.length < 3) {
-      setLocations([])
-      return
+  // Daily Verse Card collapsible states
+  const [isWordByWordExpanded, setIsWordByWordExpanded] = useState(false)
+  const [isTranslationExpanded, setIsTranslationExpanded] = useState(true)
+  const [isPurportExpanded, setIsPurportExpanded] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [isCompleted, setIsCompleted] = useState(false)
+
+  // iPhone Mockup Active Tab
+  const [activeMockupTab, setActiveMockupTab] = useState<'read' | 'calendar' | 'counter'>('read')
+
+  // Interactive Japa Counter States
+  const [mantraCount, setMantraCount] = useState(0)
+  const [roundsCount, setRoundsCount] = useState(0)
+
+  // Mini Calendar states
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
+  const [calendarDayData, setCalendarDayData] = useState<CalendarDay | null>(null)
+  const [calendarLoading, setCalendarLoading] = useState(false)
+
+  // Handle Speech synthesis (Listen to verse)
+  const handleSpeak = (text: string) => {
+    if ('speechSynthesis' in window) {
+      if (isPlaying) {
+        window.speechSynthesis.cancel()
+        setIsPlaying(false)
+        if (activeSpeechText === text) {
+          return
+        }
+      }
+
+      const cleanText = text.replace(/dhṛtarāṣṭraḥ|uvāca|kṣetre|yuyutsavaḥ|māmakāḥ|pāṇḍavāś/gi, '') // simplify pronunciation
+      const newUtterance = new SpeechSynthesisUtterance(cleanText)
+      newUtterance.rate = 0.85
+      newUtterance.pitch = 1.0
+      
+      newUtterance.onend = () => {
+        setIsPlaying(false)
+        setActiveSpeechText('')
+      }
+
+      newUtterance.onerror = () => {
+        setIsPlaying(false)
+        setActiveSpeechText('')
+      }
+
+      setActiveSpeechText(text)
+      setIsPlaying(true)
+      window.speechSynthesis.speak(newUtterance)
+    } else {
+      alert("Text-to-speech is not supported in this browser.")
     }
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/find-location?name=${query}`)
-      const data = await response.json()
-      const allLocations = [...(data.CONTAINS || []), ...(data.EQUALS || []), ...(data.STARTS || [])]
-      setLocations(allLocations)
-    } catch (error) {
-      console.error('Error fetching locations:', error)
-      setLocations([])
+  }
+
+  // Cancel speech on unmount
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
     }
   }, [])
 
-  const fetchCalendarData = useCallback(async (location: Location, startDate: Date) => {
-    setLoading(true)
+  // Interactive Japa Clicker
+  const handleIncrementJapa = () => {
+    if (mantraCount >= 107) {
+      setMantraCount(0)
+      setRoundsCount(prev => prev + 1)
+    } else {
+      setMantraCount(prev => prev + 1)
+    }
+  }
+
+  const handleResetJapa = () => {
+    setMantraCount(0)
+    setRoundsCount(0)
+  }
+
+  // Fetch calendar info for a default location (Edison, US) to display live data on load
+  const fetchDefaultCalendar = useCallback(async () => {
+    setCalendarLoading(true)
     try {
-      const endDate = addMonths(startDate, MONTHS_TO_FETCH - 1)
-      endDate
+      const today = new Date()
       const response = await fetch(`${import.meta.env.VITE_API_URL}/calendar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          city: location.city,
-          country: location.country,
-          period: MONTHS_TO_FETCH * 30, // Approximate number of days
-          year: startDate.getFullYear(),
-          month: startDate.getMonth() + 1,
-          day: startDate.getDate(),
+          city: "Edison",
+          country: "United States",
+          period: 1,
+          year: today.getFullYear(),
+          month: today.getMonth() + 1,
+          day: today.getDate(),
         }),
       })
-      const data: CalendarData = await response.json()
-      
-      // Convert the array of days into a Record for easier access
-      const newCalendarData = data.days.reduce((acc, day) => {
-        const key = `${day.date.year}-${day.date.month}-${day.date.day}`
-        acc[key] = day
-        return acc
-      }, {} as Record<string, CalendarDay>)
-
-      setCalendarData(prevData => ({ ...prevData, ...newCalendarData }))
-    } catch (error) {
-      console.error('Error fetching calendar data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  const getLocationByCoordinates = useCallback(async (latitude: number, longitude: number) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/find-location?latitude=${latitude}&longitude=${longitude}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
       const data = await response.json()
-      if (data && data.length > 0) {
-        setSelectedLocation(data[0])
-        setCitySearch(data[0].name)
-        setCalendarData({})
+      if (data && data.days && data.days.length > 0) {
+        setCalendarDayData(data.days[0])
+        setSelectedLocation(data.location)
       }
     } catch (error) {
-      console.error('Error fetching location by coordinates:', error)
+      console.error('Error fetching default calendar data:', error)
+    } finally {
+      setCalendarLoading(false)
     }
   }, [])
-
-  const handleGeolocation = useCallback(() => {
-    setGeolocating(true)
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          getLocationByCoordinates(position.coords.latitude, position.coords.longitude)
-          setGeolocating(false)
-        },
-        (error) => {
-          console.error('Geolocation error:', error)
-          setGeolocating(false)
-        }
-      )
-    } else {
-      console.error('Geolocation is not supported by this browser.')
-      setGeolocating(false)
-    }
-  }, [getLocationByCoordinates])
 
   useEffect(() => {
-    if (selectedLocation) {
-      const startOfCurrentMonth = startOfMonth(date)
-      const existingDataForMonth = Object.keys(calendarData).some(key => {
-        const [year, month] = key.split('-').map(Number)
-        return year === startOfCurrentMonth.getFullYear() && month === startOfCurrentMonth.getMonth() + 1
-      })
-
-      if (!existingDataForMonth) {
-        fetchCalendarData(selectedLocation, startOfCurrentMonth)
-      }
-    }
-  }, [selectedLocation, date, fetchCalendarData, calendarData])
-
-  const handlePrevMonth = () => {
-    setDate(prevDate => subMonths(prevDate, 1))
-  }
-
-  const handleNextMonth = () => {
-    setDate(prevDate => addMonths(prevDate, 1))
-  }
-
-  const getDayInfo = (day: Date) => {
-    const key = `${day.getFullYear()}-${day.getMonth() + 1}-${day.getDate()}`
-    return calendarData[key] || null
-  }
+    fetchDefaultCalendar()
+  }, [fetchDefaultCalendar])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 text-white p-4 sm:p-6 md:p-8 flex flex-col items-center">
- 
-      <motion.h1 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-4xl sm:text-5xl md:text-6xl font-bold text-center mb-8 tracking-tight font-marcellus text-amber-100"
-      >
-        Bhāv
-      </motion.h1>
-      <Tabs defaultValue="verse" className="w-full max-w-4xl mx-auto">
-        <TabsList className="grid w-full grid-cols-2 bg-white/10 rounded-full p-1 mb-6">
-          <TabsTrigger value="verse" className="rounded-full text-sm sm:text-base transition-all duration-300 text-amber-100 data-[state=active]:bg-amber-100/20 data-[state=active]:text-amber-100">Daily Verse</TabsTrigger>
-          <TabsTrigger value="calendar" className="rounded-full text-sm sm:text-base transition-all duration-300 text-amber-100 data-[state=active]:bg-amber-100/20 data-[state=active]:text-amber-100">Calendar</TabsTrigger>
-        </TabsList>
+    <div className="w-full max-w-7xl mx-auto space-y-24 px-4 sm:px-6 py-6 overflow-hidden">
+      
+      {/* 1. HERO SECTION */}
+      <section className="relative flex flex-col lg:flex-row items-center justify-between gap-12 pt-6 lg:pt-16">
+        {/* Floating Ambient Gradients */}
+        <div className="absolute top-12 left-10 w-72 h-72 bg-primary/5 rounded-full blur-[100px] -z-10" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-secondary/5 rounded-full blur-[120px] -z-10" />
+        
+        <div className="flex-1 space-y-8 max-w-2xl text-center lg:text-left">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider"
+          >
+            <Sparkles className="h-3 w-3" />
+            <span>Discover Bhav 2.0</span>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight font-marcellus leading-tight"
+          >
+            Your Daily <br />
+            <span className="text-primary italic">Spiritual</span> Companion
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-lg text-muted-foreground leading-relaxed font-sans max-w-lg mx-auto lg:mx-0"
+          >
+            Bhāv delivers daily wisdom, calculated Vaishnava festival calendars, and interactive spiritual habits to simplify your devotional practice. Beautifully crafted, deeply integrated.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
+          >
+            <a 
+              href="https://apple.co/48CmhMl" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="transition-transform hover:scale-[1.03] active:scale-95"
+            >
+              <img src={AppleSVG} alt="Download on App Store" className="h-14 w-auto object-contain" />
+            </a>
+            <Link 
+              to="/calendar" 
+              className="flex items-center gap-2 px-6 h-14 rounded-2xl bg-card border border-border text-foreground hover:bg-muted font-marcellus font-semibold text-sm transition-all shadow-sm"
+            >
+              <span>Launch Web Calendar</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </motion.div>
+
+          {/* Quick Stats/Badges */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="pt-4 flex items-center justify-center lg:justify-start gap-8 text-xs text-muted-foreground font-marcellus"
+          >
+            <div className="flex items-center gap-2">
+              <Check className="h-4 w-4 text-primary" />
+              <span>Offline Vedic Engine</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Check className="h-4 w-4 text-primary" />
+              <span>Ad-Free Devotional Space</span>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Hero iPhone Image Mockup */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
+          initial={{ opacity: 0, scale: 0.95, y: 40 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.8, type: "spring", stiffness: 100 }}
+          className="flex-1 flex justify-center items-center relative"
         >
-          <TabsContent value="verse">
-            <Card className="bg-white/10 backdrop-blur-md border-none shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex justify-between items-center text-xl sm:text-2xl font-marcellus text-amber-100">
-                  <span>Daily Verse</span>
-                  <div className="flex space-x-2">
-                    <Button variant="ghost" size="icon" className="text-amber-100 hover:bg-amber-100/20">
-                      <Share2 className="h-5 w-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-amber-100 hover:bg-amber-100/20">
-                      <Info className="h-5 w-5" />
-                    </Button>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="bg-white/10 p-6 rounded-lg">
-                  <h2 className="text-lg font-semibold mb-3 font-marcellus text-amber-100">BG 1.1</h2>
-                  <p className="text-sm mb-4 leading-relaxed font-marcellus text-amber-50">
-                    dhṛtarāṣṭra uvāca
-                    dharma-kṣetre kuru-kṣetre
-                    samavetā yuyutsavaḥ
-                    māmakāḥ pāṇḍavāś caiva
-                    kim akurvata sañjaya
-                  </p>
-                  <div className="space-y-3">
-                    {['Word-by-Word Definition', 'Translation', 'Purport'].map((item) => (
-                      <Button key={item} variant="outline" className="w-full justify-start text-left hover:bg-amber-100/20 transition-colors duration-300 text-black-100 border-amber-100/50">
-                        {item}
-                      </Button>
-                    ))}
-                  </div>
+          {/* Decorative halo */}
+          <div className="absolute w-80 h-80 rounded-full border border-primary/20 animate-[spin_80s_linear_infinite]" />
+          <div className="absolute w-[22rem] h-[22rem] rounded-full border border-dashed border-secondary/20 animate-[spin_120s_linear_infinite]" />
+          
+          {/* iPhone Frame */}
+          <div className="relative w-[300px] h-[610px] rounded-[50px] border-[12px] border-neutral-900 bg-neutral-950 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden">
+            {/* Screen Content Wrapper */}
+            <div className="w-full h-full bg-[#FDFBF7] text-black font-sans relative flex flex-col justify-between overflow-hidden">
+              {/* iPhone Notch */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-neutral-900 rounded-b-2xl z-50 flex items-center justify-center">
+                <div className="w-12 h-1 bg-neutral-800 rounded-full" />
+              </div>
+
+              {/* Status Bar */}
+              <div className="h-10 pt-3 px-6 flex justify-between items-center text-xs font-semibold text-neutral-800 z-40 bg-[#FDFBF7]/80 backdrop-blur-sm">
+                <span>9:41</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 bg-neutral-800 rounded-full flex items-center justify-center text-[8px] text-white">ॐ</span>
+                  <div className="w-4 h-2.5 border border-neutral-800 rounded-sm" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-3 font-marcellus text-amber-100">Your Reflections</h3>
-                  <Textarea
-                    placeholder="Type your reflections here..."
-                    value={reflection}
-                    onChange={(e) => setReflection(e.target.value)}
-                    className="bg-white/10 border-amber-100/30 text-amber-50 placeholder-amber-200/50 resize-none"
-                    rows={4}
-                  />
-                  <p className="text-sm text-amber-200/70 mt-2">{reflection.length}/300 characters</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="calendar">
-            <Card className="bg-white/10 backdrop-blur-md border-none shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex justify-between items-center text-xl sm:text-2xl font-marcellus text-amber-100">
-                  <span>Calendar</span>
-                  <Button variant="ghost" size="icon" className="text-amber-100 hover:bg-amber-100/20">
-                    <Info className="h-5 w-5" />
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="relative">
-                  <div className="flex items-center">
-                    <Input
-                      type="text"
-                      placeholder="Search for a city..."
-                      value={citySearch}
-                      onChange={(e) => {
-                        setCitySearch(e.target.value)
-                        searchLocations(e.target.value)
-                      }}
-                      className="bg-white/10 border-amber-100/30 text-amber-100 placeholder-amber-200/50 pr-20"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 text-amber-100 hover:bg-amber-100/20"
-                      onClick={handleGeolocation}
-                      disabled={geolocating}
+              </div>
+
+              {/* Dynamic App Screens inside Mockup */}
+              <div className="flex-grow p-4 pt-1 overflow-y-auto scrollbar-none flex flex-col justify-start">
+                <AnimatePresence mode="wait">
+                  {activeMockupTab === 'read' && (
+                    <motion.div
+                      key="read"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-4"
                     >
-                      <MapPin className="h-5 w-5" />
-                    </Button>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-[10px] uppercase font-bold text-primary tracking-widest">Daily Wisdom</span>
+                        <span className="text-[11px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">BG 1.1</span>
+                      </div>
+                      
+                      <div className="text-center p-3 rounded-2xl bg-white border border-neutral-200/50 shadow-sm space-y-3">
+                        <p className="text-sm font-serif font-bold text-neutral-900 leading-relaxed whitespace-pre-line">
+                          dhṛtarāṣṭra uvāca<br/>
+                          dharma-kṣetre kuru-kṣetre<br/>
+                          samavetā yuyutsavaḥ
+                        </p>
+                        <div className="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">
+                          <Volume2 className="h-3 w-3" />
+                          <span>TTS Active</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-white border border-neutral-200/50 shadow-sm space-y-1">
+                        <h4 className="text-xs font-bold text-neutral-700 uppercase tracking-wider">Translation</h4>
+                        <p className="text-xs text-neutral-600 leading-relaxed font-serif">
+                          "Dhṛtarāṣṭra said: O Sañjaya, after my sons and the sons of Pāṇḍu assembled in the place of pilgrimage..."
+                        </p>
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-secondary/5 border border-secondary/20 shadow-sm space-y-1">
+                        <div className="flex items-center gap-1 text-secondary">
+                          <Sparkles className="h-3 w-3" />
+                          <h4 className="text-xs font-bold uppercase tracking-wider">Key Insight</h4>
+                        </div>
+                        <p className="text-xs text-neutral-700 italic font-serif leading-relaxed">
+                          The Kurukṣetra battlefield represents the internal moral struggles...
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {activeMockupTab === 'calendar' && (
+                    <motion.div
+                      key="calendar"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-4"
+                    >
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-[10px] uppercase font-bold text-primary tracking-widest">Astronomical Engine</span>
+                        <div className="flex items-center gap-1 text-[10px] font-semibold text-neutral-500">
+                          <MapPin className="h-3 w-3 text-primary" />
+                          <span>Edison, US</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-white border border-neutral-200/50 shadow-sm space-y-3">
+                        <div className="text-center">
+                          <span className="text-xs text-neutral-400">TODAY</span>
+                          <h4 className="text-base font-bold font-serif text-neutral-900 mt-0.5">Ekadasi Fasting</h4>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 text-center text-[10px]">
+                          <div className="p-2 rounded-xl bg-neutral-50 border border-neutral-100">
+                            <span className="text-neutral-400 block mb-0.5">Tithi</span>
+                            <span className="font-semibold text-neutral-800">Ekadasi</span>
+                          </div>
+                          <div className="p-2 rounded-xl bg-neutral-50 border border-neutral-100">
+                            <span className="text-neutral-400 block mb-0.5">Nakshatra</span>
+                            <span className="font-semibold text-neutral-800">Rohini</span>
+                          </div>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-amber-50 border border-primary/20 text-center">
+                          <span className="text-[9px] uppercase font-bold text-primary tracking-wider block mb-0.5">Parana (Break Fast)</span>
+                          <span className="text-[11px] font-bold text-neutral-800">05:42 AM - 09:56 AM</span>
+                        </div>
+                      </div>
+
+                      {/* Cal Visual Grid Mock */}
+                      <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-semibold text-neutral-400">
+                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={i}>{d}</span>)}
+                        {Array.from({ length: 28 }).map((_, i) => {
+                          const isToday = i === 14
+                          return (
+                            <span 
+                              key={i} 
+                              className={`h-6 flex items-center justify-center rounded-md ${
+                                isToday 
+                                  ? 'bg-primary text-white font-bold' 
+                                  : i === 13 || i === 15 
+                                  ? 'bg-neutral-100 text-neutral-800' 
+                                  : 'text-neutral-300'
+                              }`}
+                            >
+                              {i + 1}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {activeMockupTab === 'counter' && (
+                    <motion.div
+                      key="counter"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-4 flex flex-col items-center justify-center text-center mt-4"
+                    >
+                      <span className="text-[10px] uppercase font-bold text-primary tracking-widest mb-1">Mantra Meditation</span>
+                      
+                      {/* Round Japa Ring Visual */}
+                      <div className="relative w-36 h-36 flex items-center justify-center rounded-full border-4 border-primary/10">
+                        <svg className="absolute inset-0 transform -rotate-95 w-full h-full">
+                          <circle
+                            cx="72"
+                            cy="72"
+                            r="66"
+                            className="stroke-primary"
+                            strokeWidth="6"
+                            fill="transparent"
+                            strokeDasharray="414"
+                            strokeDashoffset="138" // simulated progress
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="flex flex-col items-center">
+                          <span className="text-3xl font-bold font-serif text-neutral-900">76</span>
+                          <span className="text-[9px] uppercase tracking-wider text-neutral-400 font-semibold">Mantras</span>
+                        </div>
+                      </div>
+
+                      <div className="w-full grid grid-cols-2 gap-3 mt-2">
+                        <div className="p-2 bg-white border border-neutral-100 rounded-2xl text-center">
+                          <span className="text-[9px] text-neutral-400 block">Current Round</span>
+                          <span className="text-sm font-bold text-neutral-800">4 / 16</span>
+                        </div>
+                        <div className="p-2 bg-white border border-neutral-100 rounded-2xl text-center">
+                          <span className="text-[9px] text-neutral-400 block">Total Japa Time</span>
+                          <span className="text-sm font-bold text-neutral-800">24m 15s</span>
+                        </div>
+                      </div>
+
+                      <span className="text-[10px] text-neutral-400 italic">Tap circle on screen to count</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* TabBar Mockup */}
+              <div className="h-16 border-t border-neutral-200 bg-[#FDFBF7] px-6 flex justify-between items-center z-40 pb-2">
+                <button 
+                  onClick={() => setActiveMockupTab('read')}
+                  className={`flex flex-col items-center gap-1 transition-colors ${activeMockupTab === 'read' ? 'text-primary' : 'text-neutral-400'}`}
+                >
+                  <BookOpen className="h-4.5 w-4.5" />
+                  <span className="text-[8px] font-bold">Read</span>
+                </button>
+                <button 
+                  onClick={() => setActiveMockupTab('calendar')}
+                  className={`flex flex-col items-center gap-1 transition-colors ${activeMockupTab === 'calendar' ? 'text-primary' : 'text-neutral-400'}`}
+                >
+                  <CalendarIcon className="h-4.5 w-4.5" />
+                  <span className="text-[8px] font-bold">Calendar</span>
+                </button>
+                <button 
+                  onClick={() => setActiveMockupTab('counter')}
+                  className={`flex flex-col items-center gap-1 transition-colors ${activeMockupTab === 'counter' ? 'text-primary' : 'text-neutral-400'}`}
+                >
+                  <Clock className="h-4.5 w-4.5" />
+                  <span className="text-[8px] font-bold">Counter</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Subtitle / Interactive control description */}
+          <div className="absolute -bottom-8 bg-card border border-border px-3 py-1.5 rounded-full text-xs text-muted-foreground flex gap-3 shadow-md">
+            <span className="font-semibold text-primary">Interactive Demo:</span>
+            <button onClick={() => setActiveMockupTab('read')} className={`hover:text-foreground ${activeMockupTab === 'read' && 'text-foreground underline'}`}>Read</button>
+            <button onClick={() => setActiveMockupTab('calendar')} className={`hover:text-foreground ${activeMockupTab === 'calendar' && 'text-foreground underline'}`}>Calendar</button>
+            <button onClick={() => setActiveMockupTab('counter')} className={`hover:text-foreground ${activeMockupTab === 'counter' && 'text-foreground underline'}`}>Counter</button>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* 2. THE 5 CORE FEATURES (WHAT IS BHAV) */}
+      <section className="space-y-12">
+        <div className="text-center space-y-3">
+          <h2 className="text-xs uppercase font-bold text-primary tracking-widest font-marcellus">Deep Devotional Habit Building</h2>
+          <h3 className="text-3xl sm:text-4xl font-bold font-marcellus">Wisdom. Organized. Simplified.</h3>
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            The Bhāv platform builds structured devotion into your day-to-day life with advanced features integrated in a simple minimal experience.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Card 1: Home Widgets */}
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="p-6 rounded-3xl bg-card border border-border/60 hover:border-primary/20 hover:shadow-md transition-all flex flex-col justify-between space-y-6"
+          >
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                <Smartphone className="h-6 w-6" />
+              </div>
+              <h4 className="text-xl font-bold font-marcellus text-foreground">Home Screen Widgets</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Stay connected to your spiritual progress with our beautiful new iOS Widgets. Track your daily Japa rounds, reading goals, and current verse right from your home screen.
+              </p>
+            </div>
+            <span className="text-xs text-blue-500 font-semibold uppercase tracking-wider">iOS Native Integration</span>
+          </motion.div>
+
+          {/* Card 2: Reading */}
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="p-6 rounded-3xl bg-card border border-border/60 hover:border-primary/20 hover:shadow-md transition-all flex flex-col justify-between space-y-6"
+          >
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-orange-500/10 text-orange-500 flex items-center justify-center">
+                <BookOpen className="h-6 w-6" />
+              </div>
+              <h4 className="text-xl font-bold font-marcellus text-foreground">Seamless Reading</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Swipe to seamlessly mark a verse as read. Jump to any verse using the new selector, share beautiful verse images, or listen to the verse audio (beta)!
+              </p>
+            </div>
+            <span className="text-xs text-orange-500 font-semibold uppercase tracking-wider">Dynamic Layouts</span>
+          </motion.div>
+
+          {/* Card 3: Library */}
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="p-6 rounded-3xl bg-card border border-border/60 hover:border-primary/20 hover:shadow-md transition-all flex flex-col justify-between space-y-6"
+          >
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-teal-500/10 text-teal-500 flex items-center justify-center">
+                <HeartHandshake className="h-6 w-6" />
+              </div>
+              <h4 className="text-xl font-bold font-marcellus text-foreground">Your Library & Reflections</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Easily access your saved verses and personal reflections. Mark your favorite verses for quick access later, keeping your devotional diary secure and organized.
+              </p>
+            </div>
+            <span className="text-xs text-teal-500 font-semibold uppercase tracking-wider">Reflective Journaling</span>
+          </motion.div>
+
+          {/* Card 4: Calendar */}
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="p-6 rounded-3xl bg-card border border-border/60 hover:border-primary/20 hover:shadow-md transition-all flex flex-col justify-between space-y-6"
+          >
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center">
+                <CalendarIcon className="h-6 w-6" />
+              </div>
+              <h4 className="text-xl font-bold font-marcellus text-foreground">Personalized Calendar</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Let the internal engine calculate Ekadasi and Vedic festivals tailored to your location. Events are highlighted alongside your daily progress dots.
+              </p>
+            </div>
+            <span className="text-xs text-red-500 font-semibold uppercase tracking-wider">Astro calculation</span>
+          </motion.div>
+
+          {/* Card 5: Japa Counter */}
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="p-6 rounded-3xl bg-card border border-border/60 hover:border-primary/20 hover:shadow-md transition-all flex flex-col justify-between space-y-6"
+          >
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-green-500/10 text-green-500 flex items-center justify-center">
+                <Clock className="h-6 w-6" />
+              </div>
+              <h4 className="text-xl font-bold font-marcellus text-foreground">Immersive Counter</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Focus deeply with our new dynamic Japa rings and rich haptic feedback. Track your daily rounds, and hold the counter to easily decrement a mistake.
+              </p>
+            </div>
+            <span className="text-xs text-green-500 font-semibold uppercase tracking-wider">Focus & Haptics</span>
+          </motion.div>
+
+          {/* Card 6: Coming Soon / Future */}
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="p-6 rounded-3xl bg-[#F57C00]/5 border border-[#F57C00]/20 flex flex-col justify-between space-y-6"
+          >
+            <div className="space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-[#F57C00]/10 text-primary flex items-center justify-center">
+                <Compass className="h-6 w-6" />
+              </div>
+              <h4 className="text-xl font-bold font-marcellus text-foreground">Community & Sanga</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Connect with spiritual peers, share devotional reflections, build community challenges, and read together in real-time. Coming soon to future versions.
+              </p>
+            </div>
+            <span className="text-xs text-[#F57C00] font-semibold uppercase tracking-wider">Future Updates</span>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 3. INTERACTIVE DAILY VERSE EXPERIENCE */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div className="lg:col-span-5 space-y-6 text-left">
+          <span className="text-xs uppercase font-bold text-primary tracking-widest font-marcellus">Feature Highlight</span>
+          <h2 className="text-3xl sm:text-4xl font-bold font-marcellus">The Daily Verse Simulator</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Read Srimad Bhagavatam and Bhagavad Gita with the exact premium interface from the mobile app. Try the interactive collapsibles on the right:
+          </p>
+          <ul className="space-y-3 text-sm text-muted-foreground">
+            <li className="flex items-start gap-3">
+              <span className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold mt-0.5">✓</span>
+              <span><strong>Listen:</strong> Play the Sanskrit text synthesis using local browser voices.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold mt-0.5">✓</span>
+              <span><strong>Word-by-word:</strong> Break down literal translations of ancient roots.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold mt-0.5">✓</span>
+              <span><strong>Key Insight & Purport:</strong> Deepen understanding of transcendental lessons.</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Replicated VerseCard iOS UI */}
+        <div className="lg:col-span-7 w-full max-w-2xl mx-auto">
+          <div className="p-6 sm:p-8 rounded-3xl bg-card border border-border shadow-[0_12px_30px_-5px_rgba(0,0,0,0.05)] space-y-6">
+            
+            {/* Verse Header */}
+            <div className="flex justify-between items-center">
+              <span className="font-marcellus text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full">
+                {mockVerse.verseNumber}
+              </span>
+              
+              <div className="flex items-center gap-2">
+                {/* Complete Button */}
+                <button 
+                  onClick={() => setIsCompleted(!isCompleted)}
+                  className={`p-2 rounded-full border transition-all ${
+                    isCompleted 
+                      ? 'bg-green-500/10 border-green-500/30 text-green-600' 
+                      : 'bg-muted border-border hover:bg-primary/5 text-muted-foreground'
+                  }`}
+                  title="Mark as Read"
+                >
+                  <Check className="h-4.5 w-4.5" />
+                </button>
+
+                {/* Favorite Button */}
+                <button 
+                  onClick={() => setIsFavorite(!isFavorite)}
+                  className={`p-2 rounded-full border transition-all ${
+                    isFavorite 
+                      ? 'bg-primary/10 border-primary/30 text-primary' 
+                      : 'bg-muted border-border hover:bg-primary/5 text-muted-foreground'
+                  }`}
+                  title="Add to Favorites"
+                >
+                  <Heart className={`h-4.5 w-4.5 ${isFavorite ? 'fill-current' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Sanskrit Text */}
+            <div className="text-center py-4 space-y-4">
+              <p className="text-xl sm:text-2xl font-serif font-bold text-foreground leading-loose whitespace-pre-line">
+                {mockVerse.verse}
+              </p>
+              
+              {/* Listen button */}
+              <div className="flex justify-center gap-2">
+                <button 
+                  onClick={() => handleSpeak(mockVerse.verse)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold uppercase tracking-wider transition-all"
+                >
+                  {isPlaying && activeSpeechText === mockVerse.verse ? (
+                    <>
+                      <Pause className="h-3.5 w-3.5 fill-current" />
+                      <span>Pause Audio</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                      <span>Listen Sanskrit (Beta)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <hr className="border-border/40" />
+
+            {/* Collapsible Word-by-Word */}
+            <div className="space-y-2">
+              <button 
+                onClick={() => setIsWordByWordExpanded(!isWordByWordExpanded)}
+                className="w-full flex justify-between items-center text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4.5 w-4.5" />
+                  <span>Word-by-word Translation</span>
+                </div>
+                <span className="text-xs text-primary">{isWordByWordExpanded ? 'Collapse' : 'Expand'}</span>
+              </button>
+              {isWordByWordExpanded && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="text-sm leading-relaxed text-muted-foreground bg-muted/40 p-4 rounded-2xl border border-border/40 font-serif"
+                >
+                  {mockVerse.wordByWordDefinition}
+                </motion.div>
+              )}
+            </div>
+
+            <hr className="border-border/40" />
+
+            {/* Collapsible Translation */}
+            <div className="space-y-2">
+              <button 
+                onClick={() => setIsTranslationExpanded(!isTranslationExpanded)}
+                className="w-full flex justify-between items-center text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                <div className="flex items-center gap-2">
+                  <Compass className="h-4.5 w-4.5" />
+                  <span>Translation</span>
+                </div>
+                <span className="text-xs text-primary">{isTranslationExpanded ? 'Collapse' : 'Expand'}</span>
+              </button>
+              {isTranslationExpanded && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="space-y-3"
+                >
+                  <p className="text-base sm:text-lg leading-relaxed text-foreground font-serif">
+                    "{mockVerse.translation}"
+                  </p>
+                  <button 
+                    onClick={() => handleSpeak(mockVerse.translation)}
+                    className="flex items-center gap-1 text-[10px] uppercase font-bold text-primary/80 hover:text-primary transition-colors"
+                  >
+                    <Volume2 className="h-3 w-3" />
+                    <span>Listen Translation</span>
+                  </button>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Key Insight Box */}
+            <div className="p-5 rounded-2xl bg-secondary/5 border border-secondary/20 space-y-2">
+              <div className="flex items-center gap-2 text-secondary">
+                <Sparkles className="h-4 w-4" />
+                <span className="text-xs font-bold uppercase tracking-wider">Key Insight</span>
+              </div>
+              <p className="text-sm leading-relaxed text-foreground italic font-serif">
+                {mockVerse.keyInsight}
+              </p>
+            </div>
+
+            <hr className="border-border/40" />
+
+            {/* Collapsible Purport */}
+            <div className="space-y-2">
+              <button 
+                onClick={() => setIsPurportExpanded(!isPurportExpanded)}
+                className="w-full flex justify-between items-center text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                <div className="flex items-center gap-2">
+                  <Info className="h-4.5 w-4.5" />
+                  <span>Full Purport (Explanation)</span>
+                </div>
+                <span className="text-xs text-primary">{isPurportExpanded ? 'Collapse' : 'Expand'}</span>
+              </button>
+              {isPurportExpanded && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="text-sm leading-relaxed text-muted-foreground bg-muted/40 p-4 rounded-2xl border border-border/40 font-serif whitespace-pre-line"
+                >
+                  {mockVerse.purport}
+                </motion.div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* 4. CALENDAR TEASER SECTION */}
+      <section className="p-8 sm:p-12 rounded-[2rem] bg-card border border-border/60 shadow-sm relative overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-red-500/5 rounded-full blur-[80px] -z-10" />
+
+        <div className="lg:col-span-7 space-y-6">
+          <span className="text-xs uppercase font-bold text-red-500 tracking-widest font-marcellus">Vaishnava Calendar System</span>
+          <h2 className="text-3xl sm:text-4xl font-bold font-marcellus">Precise Vedic Calculations</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            The Bhāv application compiles location-based solar/lunar coordination (tithis, nakshatras) and alerts you of fasting days (Ekadasi) and festivals directly.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 rounded-2xl bg-muted/50 border border-border/40 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground">Tithis & Nakshatras</span>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Automatically details the lunar day index (tithi) and planetary constraints.
+              </p>
+            </div>
+            <div className="p-4 rounded-2xl bg-muted/50 border border-border/40 space-y-1">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground">Break-fast Schedules</span>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Lists local Sunrise schedules and Ekadasi break-fast parana windows precisely.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <Link 
+              to="/calendar" 
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white hover:bg-primary/95 font-marcellus font-semibold text-sm transition-all shadow-sm"
+            >
+              <span>Access Complete Calendar</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Live / Simulated Widget on Homepage */}
+        <div className="lg:col-span-5 w-full">
+          <div className="p-6 rounded-3xl bg-background border border-border/80 shadow-md space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-primary" />
+                <span className="font-marcellus text-sm font-bold">Vedic Astro Engine</span>
+              </div>
+              <span className="text-[10px] uppercase bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">Live Data</span>
+            </div>
+
+            {calendarLoading ? (
+              <p className="text-xs text-muted-foreground">Calculating planetary alignments...</p>
+            ) : calendarDayData ? (
+              <div className="space-y-4">
+                <div className="text-center py-2">
+                  <span className="text-[10px] text-muted-foreground block uppercase font-semibold">Today in {selectedLocation?.city || 'Edison'}</span>
+                  <span className="text-base font-bold font-serif text-foreground block mt-1">
+                    {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-xl bg-card border border-border/60 text-center">
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground block mb-0.5">Tithi</span>
+                    <span className="text-xs font-semibold text-foreground">{calendarDayData.astrodata.tithi || 'Calculation Error'}</span>
                   </div>
-                  {locations.length > 0 && (
-                    <ul className="absolute z-50 w-full bg-gray-800/[0.9] rounded-lg mt-1 max-h-40 overflow-y-auto shadow-lg border border-amber-100/30 backdrop-blur-md">
-                      {locations.map((location, index) => (
-                        <li
-                          key={index}
-                          className="p-2 hover:bg-amber-100/20 cursor-pointer text-amber-100"
-                          onClick={() => {
-                            setSelectedLocation(location)
-                            setCitySearch(location.name)
-                            setLocations([])
-                            setCalendarData({})
-                          }}
-                        >
-                          {location.name}, {location.country}
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="p-3 rounded-xl bg-card border border-border/60 text-center">
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground block mb-0.5">Nakshatra</span>
+                    <span className="text-xs font-semibold text-foreground">{calendarDayData.astrodata.naksatra || 'Calculation Error'}</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-2">
+                  <span className="text-[10px] uppercase font-bold text-primary tracking-wider block">Devotional Events</span>
+                  {calendarDayData.events && calendarDayData.events.length > 0 ? (
+                    calendarDayData.events.map((event, idx) => (
+                      <p key={idx} className="text-xs text-foreground font-medium flex items-start gap-2">
+                        <span className="text-primary font-bold mt-0.5">•</span>
+                        <span>{event.text}</span>
+                      </p>
+                    ))
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No specific fasting observances for today.</p>
                   )}
                 </div>
-                <div className="text-center">
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-1 font-marcellus text-amber-100">
-                    {date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                  </h2>
-                  <p className="text-sm text-amber-200/70">{selectedLocation ? selectedLocation.name : 'Select a location'}</p>
-                </div>
-                <div className="flex justify-between items-center">
-                  <Button variant="ghost" size="icon" className="text-amber-100 hover:bg-amber-100/20" onClick={handlePrevMonth}>
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                  <span className="text-lg font-medium font-marcellus text-amber-100">
-                    {date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                  </span>
-                  <Button variant="ghost" size="icon" className="text-amber-100 hover:bg-amber-100/20" onClick={handleNextMonth}>
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-7 gap-6">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(newDate) => newDate && setDate(newDate)}
-                    month={date}
-                    onMonthChange={setDate}
-                    className="rounded-lg border-amber-100/20 bg-white/10 col-span-1 md:col-span-5"
-                    classNames={{
-                      months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                      month: "space-y-4",
-                      caption: "flex justify-center pt-1 relative items-center",
-                      caption_label: "text-sm font-medium text-amber-100",
-                      nav: "space-x-1 flex items-center",
-                      nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 text-amber-100",
-                      nav_button_previous: "absolute left-1",
-                      nav_button_next: "absolute right-1",
-                      table: "w-full border-collapse space-y-1",
-                      head_row: "flex",
-                      head_cell: "text-amber-200/70 rounded-md w-9 font-normal text-[0.8rem]",
-                      row: "flex w-full mt-2",
-                      cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-amber-100/20 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                      day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 text-amber-50",
-                      day_selected: "bg-amber-100/30 text-amber-100 hover:bg-amber-100/40 focus:bg-amber-100/40",
-                      day_today: "bg-amber-100/10 text-amber-100",
-                      day_outside: "text-amber-200/50 opacity-50",
-                      day_disabled: "text-amber-200/50 opacity-50",
-                      day_range_middle: "aria-selected:bg-amber-100/20 aria-selected:text-amber-100",
-                      day_hidden: "invisible",
-                    }}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-xs text-muted-foreground">
+                <MapPin className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
+                <p>Ensure API Connection to view calculations</p>
+                <button onClick={fetchDefaultCalendar} className="text-primary underline mt-2">Retry Loading</button>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. INTERACTIVE JAPA MEDITATIONHabits & COUNTER */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        {/* Interactive Japa Widget */}
+        <div className="lg:col-span-6 flex justify-center items-center w-full max-w-md mx-auto order-last lg:order-first">
+          <div className="w-full p-6 sm:p-8 rounded-3xl bg-card border border-border shadow-sm space-y-6 text-center">
+            <div className="flex justify-between items-center">
+              <span className="text-xs uppercase font-bold text-primary tracking-widest font-marcellus">Japa Counter</span>
+              <button 
+                onClick={handleResetJapa}
+                className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+                title="Reset counter"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>Reset</span>
+              </button>
+            </div>
+
+            {/* Simulated Japa Circle Clicker */}
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <button 
+                onClick={handleIncrementJapa}
+                className="relative w-48 h-48 rounded-full bg-background border border-border/80 flex flex-col items-center justify-center hover:scale-[1.02] active:scale-95 transition-all shadow-inner focus:outline-none group"
+              >
+                {/* SVG Progress Ring */}
+                <svg className="absolute inset-0 transform -rotate-90 w-full h-full">
+                  <circle
+                    cx="96"
+                    cy="96"
+                    r="88"
+                    className="stroke-primary/10"
+                    strokeWidth="6"
+                    fill="transparent"
                   />
-                  <div className="bg-white/10 p-4 rounded-lg space-y-4 col-span-1 md:col-span-2 h-[300px] overflow-y-auto">
-                    {loading ? (
-                      <p className="text-amber-200/70">Loading...</p>
-                    ) : getDayInfo(date) ? (
-                      <>
-                        <div>
-                          <h3 className="font-semibold mb-1 font-marcellus text-amber-100">Tithi/Nakshatra</h3>
-                          <p className="text-sm text-amber-200/70">
-                            Tithi: {getDayInfo(date)?.astrodata.tithi}, 
-                            Nakshatra: {getDayInfo(date)?.astrodata.naksatra}
-                          </p>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold mb-1 font-marcellus text-amber-100">Events</h3>
-                          {getDayInfo(date)?.events && getDayInfo(date)!.events.length > 0 ? (
-                            getDayInfo(date)!.events.map((event, index) => (
-                              <p key={index} className="text-sm text-amber-200/70">{event.text}</p>
-                            ))
-                          ) : (
-                            <p className="text-sm text-amber-200/70">No events for this day</p>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-amber-200/70">Select a date to view details</p>
-                    )}
-                  </div>
+                  <circle
+                    cx="96"
+                    cy="96"
+                    r="88"
+                    className="stroke-primary"
+                    strokeWidth="6"
+                    fill="transparent"
+                    strokeDasharray="552"
+                    strokeDashoffset={552 - (552 * mantraCount) / 108}
+                    strokeLinecap="round"
+                    style={{ transition: 'stroke-dashoffset 0.1s ease-out' }}
+                  />
+                </svg>
+
+                {/* Inner Counter Labels */}
+                <span className="text-4xl font-bold font-serif text-foreground">{mantraCount}</span>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mt-1">Mantras</span>
+                <div className="absolute bottom-6 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-primary font-bold uppercase tracking-wider">
+                  Click to Count
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </motion.div>
-      </Tabs>
+              </button>
+
+              <div className="w-full grid grid-cols-2 gap-4">
+                <div className="p-3 bg-muted/40 border border-border/60 rounded-2xl">
+                  <span className="text-[10px] text-muted-foreground block uppercase font-bold tracking-wider">Completed Rounds</span>
+                  <span className="text-xl font-bold text-foreground mt-1 block">{roundsCount}</span>
+                </div>
+                <div className="p-3 bg-muted/40 border border-border/60 rounded-2xl">
+                  <span className="text-[10px] text-muted-foreground block uppercase font-bold tracking-wider">Daily Target</span>
+                  <span className="text-xl font-bold text-foreground mt-1 block">16 Rounds</span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground italic">
+              * Click the circle above to record Japa rounds. A single full round equals 108 mantras.
+            </p>
+          </div>
+        </div>
+
+        {/* habit copywriting */}
+        <div className="lg:col-span-6 space-y-6 text-left">
+          <span className="text-xs uppercase font-bold text-primary tracking-widest font-marcellus">Habit Tracking</span>
+          <h2 className="text-3xl sm:text-4xl font-bold font-marcellus">Cultivate Spiritual Habits</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Bhāv treats habit formation as a sacred process. Through visual cues, haptic clicking mechanisms, and progress tracking, the app establishes devotional consistency.
+          </p>
+
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="h-10 w-10 shrink-0 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold font-marcellus text-foreground">Round Counters</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                  Keep track of Japa rounds without losing focus. The native app registers rounds with seamless haptics.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="h-10 w-10 shrink-0 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <RotateCcw className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold font-marcellus text-foreground">Habit History</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                  Track reading stats and completion rings to maintain visual momentum day by day.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      {/* 6. CALL TO ACTION DOWNLOAD */}
+      <section className="p-8 sm:p-12 md:p-16 rounded-[2.5rem] bg-gradient-to-br from-[#F57C00] to-[#E65100] text-white text-center space-y-8 relative overflow-hidden">
+        {/* Visual elements inside CTA */}
+        <div className="absolute -top-16 -left-16 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
+        <div className="absolute -bottom-16 -right-16 w-72 h-72 bg-black/10 rounded-full blur-2xl" />
+
+        <div className="max-w-2xl mx-auto space-y-4">
+          <span className="text-2xl">ॐ</span>
+          <h2 className="text-4xl sm:text-5xl font-bold font-marcellus tracking-tight">Begin Your Devotional Path</h2>
+          <p className="text-base text-white/80 leading-relaxed font-sans max-w-lg mx-auto">
+            Get Bhav on your iPhone to access widgets, local notification reminders, daily chanting counters, and reading history trackers.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a 
+            href="https://apple.co/48CmhMl" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="transition-transform hover:scale-[1.05] active:scale-95"
+          >
+            <img src={AppleSVG} alt="Download on App Store" className="h-14 w-auto object-contain" />
+          </a>
+          <div className="flex flex-col items-center opacity-70">
+            <img src={GooglePlayStoreSVG} alt="Android Google Play Store" className="h-14 w-auto object-contain select-none grayscale pointer-events-none opacity-40" />
+            <span className="text-[10px] mt-1 font-semibold uppercase tracking-wider text-white/80">Coming soon on Android</span>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
