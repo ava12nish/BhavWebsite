@@ -10,27 +10,27 @@ export default function About() {
   const team = [
     {
       name: 'Avanish Samala',
-      role: 'Founder, Chief Executive Officer', 
+      role: 'Founder', 
       email: 'avanishsamala@gmail.com',
       instagram: 'ava12nish',
       image: AvanishAbout,
-      bio: 'Leads the vision for Bhāv and its mission to connect people with Vedic wisdom.'
+      bio: 'Leads the vision for Bhāv.'
     },
     {
       name: 'Damodar Kamani',
-      role: 'Lead Engineer, Chief Operating Officer',
+      role: 'Engineer',
       email: 'damodarkamani@gmail.com',
       instagram:'dam_kamani',
       image: DamodarAbout2,
-      bio: "Leads technical operations, driving the development of Bhāv's app and website."
+      bio: 'Leads technical operations.'
     },
     {
       name: 'Suvrat Agrawal',
-      role: 'Designer, Chief Marketing Officer',
+      role: 'Growth',
       email: 'suvrat.agrawal@gmail.com',
       instagram: 'suvrat2108',
       image: SuvratAbout,
-      bio: "Leads marketing, growth strategies, and outreach to expand Bhāv's presence."
+      bio: 'Leads marketing'
     },
   ]
 
