@@ -191,10 +191,10 @@ export default function Home() {
   }, [fetchDefaultCalendar])
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-24 px-4 sm:px-6 py-6 overflow-hidden">
+    <div className="w-full max-w-7xl mx-auto space-y-24 px-4 sm:px-6 py-2 overflow-hidden">
       
       {/* 1. HERO SECTION */}
-      <section className="relative flex flex-col lg:flex-row items-center justify-between gap-12 pt-6 lg:pt-16">
+      <section className="relative flex flex-col lg:flex-row items-center justify-between gap-12 pt-2 lg:pt-6">
         {/* Floating Ambient Gradients */}
         <div className="absolute top-12 left-10 w-72 h-72 bg-primary/5 rounded-full blur-[100px] -z-10" />
         <div className="absolute bottom-10 right-10 w-96 h-96 bg-secondary/5 rounded-full blur-[120px] -z-10" />

@@ -32,7 +32,7 @@ export function Navbar() {
             transition={{ duration: 0.5 }}
             className="text-2xl sm:text-3xl font-bold font-marcellus cursor-pointer text-primary hover:opacity-90 flex items-center gap-2"
           >
-            <span className="text-3xl">ॐ</span> Bhāv
+            Bhāv
           </motion.h1>
         </Link>
 
