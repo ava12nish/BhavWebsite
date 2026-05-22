@@ -28,7 +28,7 @@ export default function Download() {
               <img 
                 src={AppleSVG} 
                 alt="Download on the App Store" 
-                className="w-full max-w-[200px]"
+                className="h-14 w-auto object-contain"
               />
             </a>
             
@@ -37,7 +37,7 @@ export default function Download() {
                 <img 
                   src={GooglePlayStoreSVG} 
                   alt="Get it on Google Play" 
-                  className="w-full max-w-[200px] mx-auto"
+                  className="h-14 w-auto object-contain mx-auto"
                 />
               </div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Coming soon on Android</p>
